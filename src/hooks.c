@@ -1,75 +1,39 @@
 #include "../inc/game.h"
 
-// bool is_collision(t_game *game, t_pos new, int *x_offset, int *y_offset)
-// {
-// 	int range = PLAYER_SIZE - 1;
-
-// 	while (*y_offset <= range)
-// 	{
-// 		*x_offset = 0;
-// 		while (*x_offset <= range)
-// 		{
-// 			// Check the position (x + x_offset, y + y_offset)
-// 			t_pos check_pos = {new.x + *x_offset, new.y + *y_offset};
-// 			//if (game->mapdata[get_block_index(&check_pos)] == '1')
-// 			if (game->mapdata[get_block_index(game, &check_pos, 999)] == '1')  //consider ceiling in the right places
-// 				return true;
-// 			(*x_offset)++;
-// 		}
-// 		(*y_offset)++;
-// 	}
-// 	return false;
-// }
-
-bool is_collision(t_game *game, t_pos new, t_player *player)
+void horiz_collision(t_game *game, t_pos new[])
 {
-    int range = PLAYER_SIZE * CONST - 1;
-    int x_offset = 0;
-    int y_offset = 0;
+	if (((game->player.angle_quad == 1 || game->player.angle_quad == 4)
+			&& game->data->map[get_block_index2(game, &new[1], 0).index] != WALL
+			&& game->data->map[get_block_index2(game, &new[3], 0).index] != WALL)
+			|| ((game->player.angle_quad == 2 || game->player.angle_quad == 3)
+			&& game->data->map[get_block_index2(game, &new[0], 0).index] != WALL
+			&& game->data->map[get_block_index2(game, &new[2], 0).index] != WALL))
+		game->player.p_pos.x = new->x;  // Move player horizontally
+}
 
-    // Set offsets based on quadrant
-    if (player->angle_quad == 1) 
-	{  // Right-Top
-        x_offset = range;  // Check right
-        y_offset = 0;      // Check top
-    } 
-    else if (player->angle_quad == 2) 
-	{  // Left-Top
-        x_offset = 0;      // Check left
-        y_offset = 0;      // Check top
-    } 
-    else if (player->angle_quad == 3) 
-	{  // Left-Bottom
-        x_offset = 0;      // Check left
-        y_offset = range;  // Check bottom
-    } 
-    else if (player->angle_quad == 4) {
-		  // Right-Bottom
-        x_offset = range;  // Check right
-        y_offset = range;  // Check bottom
-    }
+void vertical_collision(t_game *game, t_pos new[])
+{
+	if (((game->player.angle_quad == 1 || game->player.angle_quad == 2)
+			&& game->data->map[get_block_index2(game, &new[0], 0).index] != WALL
+			&& game->data->map[get_block_index2(game, &new[1], 0).index] != WALL)
+			|| ((game->player.angle_quad == 3 || game->player.angle_quad == 4)
+			&& game->data->map[get_block_index2(game, &new[2], 0).index] != WALL
+			&& game->data->map[get_block_index2(game, &new[3], 0).index] != WALL))
+		game->player.p_pos.y = new->y;  // Move player vertically
+}
 
-    // Check horizontal collision (left or right edge)
-	int i = 0;
-    while(i <= range) 
-	{
-        t_pos check_x = {new.x + x_offset, new.y + i};
-        if (game->data->map[get_block_index(game, &check_x, 0)] == '1')
-            return true;
-		i++;
-    }
+void check_collision(t_game *game, t_pos *new_pos) 
+{
+	t_pos	new_corners[4] = {
+			*new_pos, // tl
+			{new_pos->x + PLAYER_SIZE * CONST, new_pos->y}, // tr
+			{new_pos->x, new_pos->y + PLAYER_SIZE * CONST}, // bl
+			{new_pos->x + PLAYER_SIZE * CONST, new_pos->y + PLAYER_SIZE * CONST}}; //br
 
-    // Check vertical collision (top or bottom edge)
-	i = 0;
-    while (i <= range) 
-	{
-        t_pos check_y = {new.x + i, new.y + y_offset};
-        if (game->data->map[get_block_index(game, &check_y, 1)] == '1')
-            return true;
-		i++;
-    }
-
-    return false;
+    // Check for collisions in all directions
+    horiz_collision(game, new_corners);  // Check horizontal collision
+    game->camera.pos.x = round(game->player.p_pos.x + (PLAYER_SIZE + CONST) / 2);
+    game->camera.pos.y = round(game->player.p_pos.y + (PLAYER_SIZE + CONST) / 2);
 }
 
 
